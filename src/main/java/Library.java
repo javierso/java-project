@@ -11,6 +11,11 @@ import java.util.HashMap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.lang.reflect.Type;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.Gson;
+import java.util.List;
+
 
 
 public class Library {
@@ -32,10 +37,11 @@ public class Library {
             return res;
         }
 
+
     }
 
     public void processVsatInfo(ArrayList<String> lines) {
-        JsonArray arr = new JsonArray();
+        ArrayList<JsonElement> arr = new  ArrayList<JsonElement>();
         for (String line : lines) {
             String[] split =  line.split("\\s+");
 
@@ -43,12 +49,48 @@ public class Library {
             String siteId = split[1];
             int beamId = Integer.parseInt(split[2]);
             double lng = Double.parseDouble(split[3]);
-            double lat = Double.parseDouble(split[4]);           
-           
-             found = persons.stream()                        // Convert to steam
-                .filter(x -> "jack".equals(x.getName()))        // we want "jack" only
-                .findAny()                                      // If 'findAny' then return found
+            double lat = Double.parseDouble(split[4]);
+             
+            JsonElement found = arr.stream()                       
+                .filter(x -> x.getAsJsonObject().get("date").getAsString().equals(date))
+                .findAny()                                      
                 .orElse(null);
+
+            if (found != null ) {
+                JsonObject beamObj = found.getAsJsonObject().getAsJsonObject("beam");
+
+                JsonElement beamIdFound = beamObj.stream()                       
+                    .filter(x -> x.getAsJsonObject().get("beamId").getAsInt() == beamId)
+                    .findAny()                                      
+                    .orElse(null);
+
+                if (beamIdFound != null) {
+                    JsonArray vsats = beamIdFound.getAsJsonObject().getAsJsonArray("vsats");
+
+                    JsonObject vsat = JsonObject();
+                    vsat.addProperty("siteId", siteId);
+                    vsat.addProperty("latitude", lat);
+                    vsat.addProperty("longitude", lng);
+
+                    vsats.add(vsat);
+                } else {
+                    //creat beam id object
+                    JsonObject newBeamIdObj = JsonObject();
+
+                    JsonArray vsats = new JsonArray(); 
+                    newBeamIdObj.addProperty("beamId", beamId);
+                    newBeamIdObj.addProperty("vsats", vsats);
+
+
+                }
+
+
+            } else {
+                JsonObject obj = JsonObject();
+                obj.addProperty("date", date);
+                obj.addProperty("beam", new JsonArray());
+
+            }
 
         }
     
